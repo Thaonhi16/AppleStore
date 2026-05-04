@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.venv/
+
+# Build output
+dist/
+dist-ssr/
+build/
+
+# Environment variables (chứa thông tin nhạy cảm)
+.env
+.env.local
+.env.production
+be/.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Prisma
+be/node_modules/
