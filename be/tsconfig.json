@@ -1,0 +1,37 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "target": "es6",
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "outDir": "dist",
+        "rootDir": "src",
+        "baseUrl": ".",
+        "types": [
+            "node",
+            "jest"
+        ],
+        "ignoreDeprecations": "6.0",
+        "paths": {
+            "config/*": [
+                "./src/config/*"
+            ],
+            "models/*": [
+                "./src/models/*"
+            ],
+            "controllers/*": [
+                "./src/controllers/*"
+            ],
+            "routes/*": [
+                "./src/routes/*"
+            ],
+            "services/*": [
+                "./src/services/*"
+            ],
+            "views/*": [
+                "./src/views/*"
+            ],
+        }
+    }
+}

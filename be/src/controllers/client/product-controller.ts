@@ -1,0 +1,481 @@
+import { prisma } from 'config/client'
+import { Response, Request } from 'express'
+import { addProductToCart, cancelOrderByUserId, countTotalProductClientPages, fetchAllProducts, fetchProductsPaginated, getAllCategory, getProductById, getProductInCart, handleDeleteProductInCart, handlePlaceOrder, listOrdersByUserId, updateCartDetailBeforeCheckout } from 'services/client/product-service';
+
+const getAllProducts = async (req: Request, res: Response) => {
+    try {
+        const products = await fetchAllProducts();
+        res.status(200).json({
+            message: "Lấy danh sách sản phẩm thành công",
+            data: products,
+        });
+    } catch (err: any) {
+        res.status(500).json({
+            message: "Đã xảy ra lỗi khi lấy sản phẩm",
+            error: err.message,
+        });
+    }
+}
+
+
+const getProductsPaginate = async (req: Request, res: Response) => {
+    const { page, pageSize } = req.query
+
+    if (!page || !pageSize) {
+        return res.status(400).json({
+            message: "Thiếu thông tin phân trang",
+        });
+    }
+
+    let currentPage = page ? +page : 1
+    if (currentPage <= 0) currentPage = 1;
+    const totalProduct = await prisma.product.count();
+    const totalPages = await countTotalProductClientPages(+pageSize);
+    try {
+        const products = await fetchProductsPaginated(+page, +pageSize);
+        res.status(200).json({
+            message: "Lấy danh sách sản phẩm thành công",
+            meta: {
+                totalPages,
+                current: page,
+                pageSize,
+                totalProduct
+            },
+            data: products,
+
+        });
+    } catch (err: any) {
+        res.status(500).json({
+            message: "Đã xảy ra lỗi khi lấy sản phẩm",
+            error: err.message,
+        });
+    }
+}
+
+const getDetailProduct = async (req: Request, res: Response) => {
+    const id = req.params.id
+    try {
+        const product = await getProductById(id as string);
+        res.status(200).json({
+            message: "Lấy thông tin sản phẩm thành công",
+            data: product,
+        });
+    } catch (err: any) {
+        res.status(500).json({
+            message: "Đã xảy ra lỗi khi lấy thông tin sản phẩm",
+            error: err.message,
+        });
+    }
+}
+
+//filter
+const filterProducts = async (req: Request, res: Response) => {
+    try {
+        const { keyword, category, subCategory, minPrice, maxPrice, sort } = req.query;
+
+        let where: any = {};
+
+        if (keyword) {
+            where.name = {
+                contains: String(keyword).toLowerCase(),
+            };
+        }
+
+
+        // filter theo category
+        if (category) {
+            where.category = {
+                name: String(category).toUpperCase(), // giả sử category là MAC/IPHONE
+            };
+        }
+
+        // filter theo subCategory
+        if (subCategory) {
+            where.subCategory = String(subCategory);
+        }
+
+        // filter theo khoảng giá (basePrice)
+        if (minPrice || maxPrice) {
+            where.basePrice = {};
+            if (minPrice) where.basePrice.gte = parseFloat(minPrice as string);
+            if (maxPrice) where.basePrice.lte = parseFloat(maxPrice as string);
+        }
+
+        // sắp xếp
+        let orderBy: any = {};
+        switch (sort) {
+            case "priceAsc":
+                orderBy = { basePrice: "asc" };
+                break;
+            case "priceDesc":
+                orderBy = { basePrice: "desc" };
+                break;
+            case "newest":
+                orderBy = { id: "desc" }; // hoặc createdAt nếu có
+                break;
+            case "oldest":
+                orderBy = { id: "asc" };
+                break;
+            case "nameAsc":
+                orderBy = { name: "asc" };
+                break;
+            case "nameDesc":
+                orderBy = { name: "desc" };
+                break;
+            default:
+                orderBy = { id: "desc" };
+                break;
+        }
+
+        const products = await prisma.product.findMany({
+            where,
+            orderBy,
+            include: { variants: true, category: true },
+        });
+
+        res.json(products);
+    } catch (err) {
+        console.error("Filter products error:", err);
+        res.status(500).json({ error: "Error filtering products" });
+    }
+};
+
+//category
+const getCategory = async (req: Request, res: Response) => {
+    try {
+        const categories = await getAllCategory()
+        res.status(200).json({
+            message: "Lấy danh mục sản phẩm thành công",
+            data: categories,
+        });
+    } catch (err: any) {
+        res.status(500).json({
+            message: "Đã xảy ra lỗi khi lấy danh mục sản phẩm",
+            error: err.message,
+        });
+    }
+}
+
+//CART
+
+const getCart = async (req: Request, res: Response) => {
+
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        })
+    }
+
+    // trả về tất cả sản phẩm trong giỏ hàng , totalPrice,
+    // trả về luôn cardId cho các bước 
+    const user = req.user;
+    try {
+        const cartDetails = await getProductInCart(+user.id);
+        const totalPrice = cartDetails?.map(item => (item.quantity * +item.price))
+            ?.reduce((a, b) => a + b, 0); // tính tổng
+        const cartId = cartDetails.length ? cartDetails[0].cart_id : 0
+        res.status(200).json({
+            success: true,
+            cart_detail: cartDetails,
+            totalPrice,
+            cartId
+        });
+    }
+    catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: "Có lỗi xảy ra khi lấy thông tin giỏ hàng",
+            error,
+        });
+
+    }
+
+}
+
+const postAddProductToCart = async (req: Request, res: Response) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        })
+    }
+
+    const id_variant = req.params.id;
+    const user = req.user;
+    try {
+
+        await addProductToCart(1, +id_variant, user);
+
+
+        res.status(201).json({
+            success: true,
+            message: "Thêm sản phẩm vào giỏ hàng thành công",
+        });
+    }
+    catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: "Có lỗi xảy ra khi thêm sản phẩm",
+            error,
+        });
+
+    }
+
+}
+
+// count cart
+const getCartCount = async (req: Request, res: Response) => {
+    try {
+
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized"
+            })
+        }
+
+        const userId = req.user.id;
+
+        const cart = await prisma.cart.findUnique({
+            where: { user_id: userId },
+            include: {
+                items: true, // lấy danh sách cart_items
+            },
+        });
+
+        if (!cart) {
+            return res.json({ success: true, cartCount: 0 });
+        }
+
+        const cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+
+        return res.json({
+            success: true,
+            cartCount,
+        });
+    } catch (error: any) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// add product to cart from detail page
+const postAddToCartFromDetailPage = async (req: Request, res: Response) => {
+
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        })
+    }
+
+    const id_variant = +req.params.id;
+    const quantity = +req.body.quantity;
+    const user = req.user;
+
+    try {
+        const result = await addProductToCart(quantity, id_variant, user);
+
+        return res.status(200).json(result);
+
+    } catch (error: any) {
+        return res.status(500).json({
+            success: false,
+            message: "Có lỗi xảy ra khi thêm sản phẩm",
+            error: error.message,
+        });
+    }
+};
+
+
+//CHECKOUT
+const postHandleCartToCheckOut = async (req: Request, res: Response) => {
+
+    //đặt hàng truyền idCart , quantity , variantID
+    const { cart_id, cartDetails } = req.body as {
+        cart_id: string,
+        cartDetails: { item_id: string, quantity: string }[]
+    }
+    try {
+
+        await updateCartDetailBeforeCheckout(cart_id, cartDetails);
+        res.status(200).json({
+            success: true,
+            message: "Cập nhật thông tin giỏ hàng thành công, chuẩn bị checkout",
+        });
+
+    }
+    catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+
+    }
+
+}
+
+const deleteProductInCart = async (req: Request, res: Response) => {
+
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        })
+    }
+
+    // trả về tất cả sản phẩm trong giỏ hàng , totalPrice,
+    // trả về luôn cardId cho các bước 
+    const user = req.user;
+
+    if (!user.sumCart) {
+        return res.status(400).json({
+            success: false,
+            message: "Thiếu thông tin giỏ hàng"
+        })
+    }
+
+    const cartItemId = req.params.id as string
+    try {
+        await handleDeleteProductInCart(cartItemId, user.sumCart, user.id)
+        res.status(200).json({
+            success: true,
+            message: "Xóa sản phẩm thành công",
+        });
+
+    }
+    catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+
+    }
+}
+
+const getCheckOutPage = async (req: Request, res: Response) => {
+    try {
+
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized"
+            })
+        }
+
+        const user = req.user;
+        const cartDetails = await getProductInCart(+user.id);
+
+        const totalPrice = cartDetails?.reduce(
+            (sum, item) => sum + (+item.price * +item.quantity),
+            0
+        ) ?? 0;
+
+        return res.status(200).json({
+            success: true,
+            message: "Lấy thông tin giỏ hàng thành công",
+            cartDetails,
+            totalPrice
+        });
+    } catch (error: any) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+const postPlaceOrder = async (req: Request, res: Response) => {
+    try {
+
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized"
+            })
+        }
+
+        const userId = req.user.id;
+        const { receiverName, receiverAddress, receiverPhone, totalAmount, paymentMethod, items } = req.body;
+
+        const result = await handlePlaceOrder(
+            userId,
+            receiverName,
+            receiverAddress,
+            receiverPhone,
+            totalAmount,
+            paymentMethod,
+            items
+        );
+
+        return res.status(200).json(result);
+    } catch (error: any) {
+        return res.status(500).json({
+            success: false,
+            message: "Có lỗi xảy ra khi đặt hàng",
+            error: error.message
+        });
+    }
+};
+
+// ORDER
+
+const getOrderHistory = async (req: Request, res: Response) => {
+    try {
+
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized"
+            })
+        }
+
+        const userId = req.user.id
+
+        const order = await listOrdersByUserId(userId);
+        return res.status(200).json({
+            success: true,
+            message: "Lấy lịch sử đặt hàng thành công",
+            order
+        });
+    } catch (error: any) {
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+const putCancelOrder = async (req: Request, res: Response) => {
+    try {
+
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized"
+            })
+        }
+
+        const userId = req.user.id
+        const orderId = req.params.orderId;
+        await cancelOrderByUserId(+userId, +orderId);
+        return res.status(200).json({
+            success: true,
+            message: "Hủy đặt hàng thành công",
+        });
+    } catch (error: any) {
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+export {
+    getAllProducts, getProductsPaginate, getDetailProduct, filterProducts, getCategory, getCart, postAddProductToCart, postHandleCartToCheckOut,
+    deleteProductInCart, getCheckOutPage, postPlaceOrder, getCartCount, postAddToCartFromDetailPage, getOrderHistory, putCancelOrder,
+
+}
