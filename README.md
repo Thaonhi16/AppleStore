@@ -134,12 +134,23 @@ Toàn bộ kịch bản kiểm thử (Test Cases), Test Plan, và Bug Reports đ
 
 *Lưu ý: Nếu có bất kỳ file nào yêu cầu quyền truy cập, vui lòng liên hệ mình qua Email cung cấp ở phần cuối.*
 
-### Quy trình Kiểm thử (QA Workflow) của dự án
-Để chứng minh việc tự xây dựng và thực hiện test, mình đã áp dụng quy trình kiểm thử bài bản như sau:
-1. **Requirement Analysis:** Đọc code base và phân tích các luồng nghiệp vụ thực tế của hệ thống E-commerce (Auth, Cart, Order, Inventory).
-2. **Test Design:** Phân tích Boundary Value, Equivalence Partitioning để viết ra các Test Case tối ưu (Lưu tại link Drive trên).
-3. **Test Execution:** Tự setup môi trường (Run Local Backend & Frontend), giả lập database và thực hiện test thủ công qua giao diện UI và API.
-4. **Bug Tracking:** Log lỗi chi tiết (Bug report) kèm theo các bước tái hiện (Steps to reproduce), kết quả thực tế (Actual result) và hình ảnh bằng chứng (Evidence).
+### 🎯 Phạm vi & Quy trình Kiểm thử (QA Workflow)
+Dự án được thực hiện với quy trình kiểm thử bài bản, bao trọn vòng đời kiểm thử phần mềm (STLC):
+
+1. **Test Planning & Analysis:** 
+   - Phân tích yêu cầu nghiệp vụ và xây dựng **Test Plan**, **Test Checklist** chi tiết cho toàn bộ hệ thống.
+2. **Test Design & Management:**
+   - Thiết kế và quản lý Test Case bao phủ nhiều loại hình kiểm thử: **Functional, UI, Integration (API), Performance, Usability**.
+3. **Test Execution (Manual & Tool-based):**
+   - **Manual Testing:** Thực hiện kiểm thử chuyên sâu các chức năng cốt lõi (Login, Search, Cart, Checkout,...).
+   - **API Testing:** Thực hiện kiểm thử tích hợp (Integration Test) và xác thực dữ liệu API. Toàn bộ kịch bản test API được tổ chức bài bản trên Postman:
+     - 🌐 **[Live Postman Workspace](https://tothaonhi2004-1332985.postman.co/workspace/Nhy's-Workspace~a7621ec3-6438-4bf1-8c6a-ea74f1dba26a/collection/48912534-b810ea76-74b3-48a8-a221-d4eac2be7b32?action=share&source=copy-link&creator=48912534)**: Xem trực tiếp các request, params, và response mẫu trên web.
+     - 📁 **Exported Collection**: File JSON đính kèm sẵn trong source code tại `be/postman/Apple-Store.postman_collection.json` (Hỗ trợ import nhanh chóng vào workspace cá nhân).
+   - **Performance Testing:** Thực hiện kiểm thử hiệu năng cơ bản (đo lường Response Time, Load) bằng **JMeter**.
+4. **Defect Management (Bug Tracking):**
+   - Ghi nhận và theo dõi Bug trên hệ thống với đầy đủ thông tin chuẩn QA (Steps to reproduce, Expected/Actual result, Evidence, Priority/Severity).
+5. **Test Reporting:**
+   - Tổng hợp kết quả, đánh giá chất lượng phần mềm và viết **Test Report** nghiệm thu.
 
 ---
 
