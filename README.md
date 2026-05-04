@@ -126,9 +126,28 @@ npm run dev
 
 ---
 
-##  Test Cases – Manual Testing
+## 📑 Tài liệu Kiểm thử (Testing Artifacts)
 
-###  Module: Authentication
+Toàn bộ kịch bản kiểm thử (Test Cases), Test Plan, và Bug Reports được mình tự thiết kế và quản lý chi tiết. Bạn có thể xem toàn bộ tài liệu gốc (Google Sheets/Docs) tại thư mục Drive dưới đây:
+
+> 🔗 **[Xem toàn bộ tài liệu Test Cases & Bug Reports tại Google Drive](https://drive.google.com/drive/folders/19dBSAi9mgnooR2xhAWW3A7mCgzBhH-Az)**
+
+*Lưu ý: Nếu có bất kỳ file nào yêu cầu quyền truy cập, vui lòng liên hệ mình qua Email cung cấp ở phần cuối.*
+
+### Quy trình Kiểm thử (QA Workflow) của dự án
+Để chứng minh việc tự xây dựng và thực hiện test, mình đã áp dụng quy trình kiểm thử bài bản như sau:
+1. **Requirement Analysis:** Đọc code base và phân tích các luồng nghiệp vụ thực tế của hệ thống E-commerce (Auth, Cart, Order, Inventory).
+2. **Test Design:** Phân tích Boundary Value, Equivalence Partitioning để viết ra các Test Case tối ưu (Lưu tại link Drive trên).
+3. **Test Execution:** Tự setup môi trường (Run Local Backend & Frontend), giả lập database và thực hiện test thủ công qua giao diện UI và API.
+4. **Bug Tracking:** Log lỗi chi tiết (Bug report) kèm theo các bước tái hiện (Steps to reproduce), kết quả thực tế (Actual result) và hình ảnh bằng chứng (Evidence).
+
+---
+
+## 🧪 Test Cases Nổi Bật – Manual Testing
+
+*(Bên dưới là một số Test Case nổi bật được trích xuất từ file Test Cases chính trong Google Drive)*
+
+### 🔐 Module: Authentication
 
 | TC# | Test Case | Steps | Expected Result | Priority |
 |-----|-----------|-------|-----------------|----------|
